@@ -52,6 +52,7 @@ export const PhotoGrid = () => {
         ref={sentinelRef}
         className={styles.photoGrid__sentinel}
         aria-hidden="true"
+        data-testid="photo-grid-sentinel"
       />
 
       {isFetchingNextPage && (
