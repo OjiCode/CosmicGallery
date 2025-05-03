@@ -1,0 +1,16 @@
+.apodCard {
+  display: block; 
+  transition: transform 0.1s ease-in-out;
+}
+
+.apodCard:hover,
+.apodCard:focus {
+  transform: scale(1.01);
+}
+
+.apodCard__image {
+  display: block; 
+  width: 100%;
+  height: auto; 
+  aspect-ratio: 16 / 9;
+}

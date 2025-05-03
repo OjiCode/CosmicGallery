@@ -1,8 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { GalleryPage } from './pages/GalleryPage';
 import './App.css';
 
 // TODO: Replace placeholder components with actual components.
-const GalleryPage = () => <div>Gallery Page Placeholder</div>;
 const DetailPage = () => <div>Detail Page Placeholder</div>;
 
 function App() {

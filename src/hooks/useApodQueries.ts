@@ -1,28 +1,75 @@
-import { useQuery, UseQueryResult } from '@tanstack/react-query';
+import {
+  useQuery,
+  UseQueryResult,
+  useInfiniteQuery,
+  InfiniteData,
+  QueryFunctionContext,
+  UseInfiniteQueryResult,
+} from '@tanstack/react-query';
 import { getApodList, getApodByDate, ApodData } from '../services/apodService';
+import { formatUTCDate } from '../utils/date';
+import {
+  DAYS_PER_PAGE,
+  MILLISECONDS_PER_SECOND,
+  SECONDS_PER_MINUTE,
+} from '../constants';
+
+const STALE_TIME_MINUTES = 10;
+const STALE_TIME_MS =
+  STALE_TIME_MINUTES * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
+
+// Helper function to calculate date ranges for pages in useInfiniteApodList
+const getDatesForPage = (
+  pageParam: number
+): { startDate: string; endDate: string } => {
+  const today = new Date();
+  const endDate = new Date(today);
+  endDate.setUTCDate(today.getUTCDate() - pageParam * DAYS_PER_PAGE);
+
+  const startDate = new Date(endDate);
+  // Subtract (DAYS_PER_PAGE - 1) days to get the start date of the 30-day window
+  startDate.setUTCDate(endDate.getUTCDate() - (DAYS_PER_PAGE - 1));
+
+  return {
+    startDate: formatUTCDate(startDate),
+    endDate: formatUTCDate(endDate),
+  };
+};
 
 /**
- * Fetch a list of APOD entries for a given date range.
- * @param startDate - The start date (YYYY-MM-DD).
- * @param endDate - The end date (YYYY-MM-DD).
- * @returns A list of APOD items for the given date range.
+ * Hook to fetch APOD data in 30-day pages for infinite scrolling.
  */
-export function useApodList(
-  startDate?: string,
-  endDate?: string
-): UseQueryResult<ApodData[], Error> {
-  return useQuery({
-    queryKey: ['apodList', startDate, endDate],
-    queryFn: () => {
-      if (!startDate || !endDate) {
-        return Promise.reject(
-          new Error('Start date and end date are required.')
-        );
-      }
+export function useInfiniteApodList(): UseInfiniteQueryResult<
+  InfiniteData<ApodData[], number>,
+  Error
+> {
+  return useInfiniteQuery<
+    ApodData[],
+    Error,
+    InfiniteData<ApodData[], number>,
+    (string | number)[],
+    number
+  >({
+    queryKey: ['apodList', 'infinite'],
+    queryFn: async ({
+      pageParam,
+    }: QueryFunctionContext<(string | number)[], number>): Promise<
+      ApodData[]
+    > => {
+      const { startDate, endDate } = getDatesForPage(pageParam);
+      console.log(`Fetching page ${pageParam}: ${startDate} to ${endDate}`); // TODO: Remove before committing
       return getApodList(startDate, endDate);
     },
-    staleTime: 60 * 60 * 1000, // 1 hour in milliseconds
-    enabled: !!startDate && !!endDate,
+    getNextPageParam: (
+      lastPage: ApodData[],
+      _allPages: ApodData[][],
+      lastPageParam: number
+    ): number | undefined => {
+      // Keep fetching unless the last page was empty
+      return lastPage.length > 0 ? lastPageParam + 1 : undefined;
+    },
+    initialPageParam: 0,
+    staleTime: STALE_TIME_MS,
   });
 }
 
